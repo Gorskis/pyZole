@@ -5,8 +5,8 @@ from app_state import AppState
 
 
 class Settings(Screen):
-    def __init__(self, appState: AppState):
-        super().__init__(appState)
+    def __init__(self, app_state: AppState):
+        super().__init__(app_state)
         self.gui_elements.add(Button('Main menu', (50, 50), func=self.open_main_menu))
 
     def draw_to(self, surface: Surface):

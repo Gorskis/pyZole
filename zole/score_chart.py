@@ -76,16 +76,13 @@ def set_points(game_mode: GameMode, results: 'PartyResults'):
     # lielais < 31          30-     'Lielais zaudē jāņos'
     # lielais 0 tricks      0t      'Lielais zaudē bezstiķī'
 
-    print(f"DEBUG!!! Calculating score for game mode: {game_mode}")
-    #print(f'DEBUG!!! Player data: {}')
     player_results_in_order = get_player_res_order(game_mode, results)
 
     if game_mode == GameMode.GALDINS:
         points = POINTS[GameMode.GALDINS]
         assign_points(player_results_in_order, points)
         return results
-    print(f'DEBUG {player_results_in_order}')
-    print(f'DEBUG lielais tricks: {player_results_in_order[0].player.tricks_taken}')
+
     lielais_tricks_taken = player_results_in_order[0].player.tricks_taken
     lielais_score = player_results_in_order[0].player.tricks_score
     point_set = POINTS[game_mode]
@@ -95,7 +92,6 @@ def set_points(game_mode: GameMode, results: 'PartyResults'):
             points = point_set['0t']
         else:
             points = point_set['1+']
-        print(f'Points used: {points} for MAZAZOLE')
         assign_points(player_results_in_order, points)
         return results
 
@@ -113,7 +109,6 @@ def set_points(game_mode: GameMode, results: 'PartyResults'):
     else:
         key = '30-'
     points = point_set[key]
-    print(f'Points used: {points} for key {key}')
     assign_points(player_results_in_order, points)
     results.lielais_won = player_results_in_order[0].has_won
     return results

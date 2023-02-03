@@ -5,7 +5,6 @@ class AppState:
     GAME_SCREEN = 2
     SETTINGS = 3
 
-
     def __init__(self):
         self.exit_app = False
         self.current_screen = None

@@ -2,6 +2,7 @@ import pygame
 from pygame import HWSURFACE, DOUBLEBUF, RESIZABLE
 from resource_manager import resources
 
+
 class BorderedScreen:
     def __init__(self, screen_size):
         self.screen_size = screen_size
@@ -31,13 +32,19 @@ class BorderedScreen:
         if self.padding[0] > 0:
             for x in range(1 + int(self.padding[0] / self.background_tile_size[0])):
                 for y in range(1 + int(self.screen_size[1] / self.background_tile_size[1])):
-                    self.screen.blit(self.background_tile, (x * self.background_tile_size[0], y * self.background_tile_size[1]))
-                    self.screen.blit(self.background_tile, (self.screen_size[0] - (1 + x) * self.background_tile_size[0], y * self.background_tile_size[1]))
+                    self.screen.blit(self.background_tile, (x * self.background_tile_size[0],
+                                                            y * self.background_tile_size[1]))
+                    self.screen.blit(self.background_tile,
+                                     (self.screen_size[0] - (1 + x) * self.background_tile_size[0],
+                                      y * self.background_tile_size[1]))
         elif self.padding[1] > 0:
             for x in range(1 + int(self.screen_size[0] / self.background_tile_size[0])):
                 for y in range(1 + int(self.padding[1] / self.background_tile_size[1])):
-                    self.screen.blit(self.background_tile, (x * self.background_tile_size[0], y * self.background_tile_size[1]))
-                    self.screen.blit(self.background_tile, (x * self.background_tile_size[0], self.screen_size[1] - (1 + y) * self.background_tile_size[1]))
+                    self.screen.blit(self.background_tile, (x * self.background_tile_size[0],
+                                                            y * self.background_tile_size[1]))
+                    self.screen.blit(self.background_tile,
+                                     (x * self.background_tile_size[0],
+                                      self.screen_size[1] - (1 + y) * self.background_tile_size[1]))
 
     def apply_sub_screen(self):
         if self.screen_size == self.base_size:

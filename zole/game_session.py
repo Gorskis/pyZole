@@ -95,7 +95,6 @@ class GameSession:
         else:
             print(f'Unknown event {self.current_event}')
 
-        print(next_event)
         if handler:
             handler.handle_game_event(next_event)
         elif next_event.name in (EventNames.PartyStartedEvent, EventNames.TrickEndedEvent, EventNames.PartyEndedEvent):

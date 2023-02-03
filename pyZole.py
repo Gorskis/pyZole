@@ -22,7 +22,6 @@ if __name__ == '__main__':
     while not app_state.exit_app:
         current_screen = screen_manager.get_screen()
         for event in pygame.event.get():
-            #print(event)
             if event.type == pygame.QUIT:
                 app_state.exit_app = True
             elif event.type == VIDEORESIZE:

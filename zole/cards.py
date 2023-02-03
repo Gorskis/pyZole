@@ -88,10 +88,7 @@ class Cards:
         return self.size > 0
 
     def add_card(self, card: Card):
-        try:
-            self.cards[self.size] = card
-        except:
-            Exception(f'ERROR index out of bounds for cards object {self} and adding {card}')
+        self.cards[self.size] = card
         self.size += 1
 
     def add_cards(self, cards: 'Cards'):
@@ -156,3 +153,16 @@ class Cards:
             return s+']'
         else:
             return '[]'
+
+
+def new_card_is_stronger(top_card: Card, new_card: Card):
+    if top_card.is_trump:
+        return new_card.i < top_card.i
+    else:  # Top card is not a trump
+        if new_card.is_trump:
+            return True
+        else:  # Neither card is a trump
+            if new_card.suit == top_card.suit:
+                return new_card.i < top_card.i
+            else:
+                return False  # Wrong suit, therefore weaker

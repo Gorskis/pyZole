@@ -40,7 +40,6 @@ class PlayerInfo(GameGuiElement):
             pygame.draw.rect(surface, (55, 255, 155), self.rect, 2, border_radius=3)
 
 
-
 class TableCards(GameGuiElement):
     def __init__(self, pos=(0, 0)):
         super().__init__(pos)
@@ -60,11 +59,9 @@ class GUICard(GameGuiElement):
     def __init__(self, card: Card = no_card, pos=(0, 0)):
         super().__init__(pos)
         self.card = card
-        #self.size = ()# self.card.image.get_size()
         self.rect = [self.pos[0], self.pos[1], 100, 136]
 
     def draw_to(self, surface: Surface, is_selected=False, is_hover=False, is_valid=False):
-        #print('Drawing card: '+str(self.card) + ' at '+str(self.pos))
         if not self.card == no_card:
             surface.blit(self.card.image, self.pos)
         if is_selected:
@@ -112,12 +109,10 @@ class GUICardHand(GameGuiElement):
     def handle_event(self, click=False, m_pos=(0, 0)) -> Card:
         last_card_clicked: Card = None
         if self.selectable > 0:
-            #print(f'event(click={click}, m_pos=({m_pos})')
             self.hover = None
             if m_pos[1] > 562 - 136:
                 for gui_card in self.gui_cards:
                     if gui_card.hit(m_pos):
-                        #print(f'hit on {gui_card.card}')
                         if click:
                             last_card_clicked = gui_card.card
                             if self.selectable > 1:

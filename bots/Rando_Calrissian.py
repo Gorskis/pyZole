@@ -6,7 +6,8 @@ from zole.game_modes import GameMode
 
 class RandoCalrissian(Bot):
     bot_name = 'Rando Calrissian'
-    def __init__(self, player_name:str):
+
+    def __init__(self, player_name: str):
         super().__init__(player_name)
         self.rand = Random()
 

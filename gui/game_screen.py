@@ -5,7 +5,7 @@ from pygame import Surface
 from game_logger import GameLogger
 from gui.abstract_screen import Screen
 from timer import Timer
-from gui.game_gui_elements import PlayerInfo, TableCards, GUICardHand, PlayerInfo
+from gui.game_gui_elements import TableCards, GUICardHand, PlayerInfo
 from gui.gui_elements import Button, Text, GuiElementCollection
 from app_state import AppState
 from zole.game_events import GameEvent, EventNames, DiscardCardsEvent, SelectGameModeEvent, PlayCardEvent, \
@@ -41,11 +41,11 @@ class GameModePicker:
     def __init__(self):
         self.show = False
         self.gui_elements = GuiElementCollection()
-        self.gui_elements.add(Text('Spēles veids', (280, 150), color=(0, 0, 0)))
-        self.gui_elements.add(Button('Garām', (280, 200), func=self._pick_pass))
-        self.gui_elements.add(Button('Pacelt', (280, 250), func=self._pick_pacelt))
-        self.gui_elements.add(Button('Zole', (280, 300), func=self._pick_zole))
-        self.gui_elements.add(Button('Mazā zole', (280, 350), func=self._pick_mazazole))
+        self.gui_elements.add(Text('Spēles veids', (300, 150), color=(0, 0, 0)))
+        self.gui_elements.add(Button('Garām', (300, 200), func=self._pick_pass))
+        self.gui_elements.add(Button('Pacelt', (300, 250), func=self._pick_pacelt))
+        self.gui_elements.add(Button('Zole', (300, 300), func=self._pick_zole))
+        self.gui_elements.add(Button('Mazā zole', (300, 350), func=self._pick_mazazole))
         self.game_event: SelectGameModeEvent = None
 
     def set_game_action(self, game_event: SelectGameModeEvent):
@@ -187,7 +187,8 @@ class GameScreen(Screen):
                 self.play_card_event = None
                 self.card_Hand.set_selectable(0)
             else:
-                print(f'Card {last_card_clicked} not in valid cards {valid_cards}')
+                pass
+                # print(f'Card {last_card_clicked} not in valid cards {valid_cards}')
 
     def button_clicked(self):
         if self.game_logger:
@@ -216,4 +217,3 @@ class GameScreen(Screen):
             first_card = game_event.trick.first_card()
             valid_cards = player.hand.get_valid_cards(first_card)
             self.card_Hand.set_valid_cards(valid_cards)
-            print(f'Valid cards: {valid_cards}')

@@ -8,9 +8,11 @@ _ctypes = {
     '♠': 'spd'
 }
 
+
 def get_alt_label(card: Card):
     ct = _ctypes[card.suit]
     return ct+card.rank
+
 
 class Resources:
     def __init__(self):

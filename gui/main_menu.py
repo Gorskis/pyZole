@@ -4,7 +4,6 @@ from gui.gui_elements import Button
 from pygame.event import Event
 from pygame import Surface
 
-from gui.pregame_menu import PreGame
 from gui.settings_screen import Settings
 
 
