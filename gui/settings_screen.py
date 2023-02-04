@@ -2,12 +2,13 @@ from pygame import Surface
 from gui.abstract_screen import Screen
 from gui.gui_elements import Button
 from app_state import AppState
+from resource_manager import resources as res
 
 
 class Settings(Screen):
     def __init__(self, app_state: AppState):
         super().__init__(app_state)
-        self.gui_elements.add(Button('Main menu', (50, 50), func=self.open_main_menu))
+        self.gui_elements.add(Button(res.strings.main_menu, (50, 50), func=self.open_main_menu))
 
     def draw_to(self, surface: Surface):
         surface.fill((25, 25, 25))

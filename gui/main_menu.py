@@ -5,14 +5,15 @@ from pygame.event import Event
 from pygame import Surface
 
 from gui.settings_screen import Settings
+from resource_manager import resources as res
 
 
 class MainMenu(Screen):
     def __init__(self, app_state: AppState):
         super().__init__(app_state)
-        self.gui_elements.add(Button('New Game', (50, 50), func=self.start_new_game))
-        self.gui_elements.add(Button('Settings', (50, 100), func=self.open_settings))
-        self.gui_elements.add(Button('Exit', (50, 150), func=self.exit_app))
+        self.gui_elements.add(Button(res.strings.new_game, (50, 50), func=self.start_new_game))
+        self.gui_elements.add(Button(res.strings.settings, (50, 100), func=self.open_settings))
+        self.gui_elements.add(Button(res.strings.exit, (50, 150), func=self.exit_app))
 
     def handle_event(self, event: Event, m_pos=(0, 0)):
         self.gui_elements.handle_event(event, m_pos)

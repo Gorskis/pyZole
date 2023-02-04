@@ -9,12 +9,13 @@ from pygame.event import Event
 from pygame import Surface
 
 from zole.game_session_factory import GameSessionFactory
+from resource_manager import resources as res
 
 
 class PreGame(Screen):
     def __init__(self, app_state: AppState):
         super().__init__(app_state)
-        self.gui_elements.add(Button('Back', (50, 50), func=self.go_back))
+        self.gui_elements.add(Button(res.strings.back, (50, 50), func=self.go_back))
         self.input1 = InputField((50, 100), length=16, text='Player A')
         values = ('GUI',) + BotManager().get_bot_names()
         self.toggle1 = Toggle(values, (300, 100))
@@ -28,9 +29,9 @@ class PreGame(Screen):
         self.toggle3 = Toggle(values, (300, 200))
         self.gui_elements.add(self.input3)
         self.gui_elements.add(self.toggle3)
-        self.gui_elements.add(Text('Write log', (300, 250)))
-        self.toggle_log = self.gui_elements.add(Toggle(('Yes', 'No'), (470, 250)))
-        self.gui_elements.add(Button('Start', (550, 300), func=self.start_game))
+        self.gui_elements.add(Text(res.strings.write_log, (250, 250)))
+        self.toggle_log = self.gui_elements.add(Toggle((res.strings.yes, res.strings.no), (470, 250)))
+        self.gui_elements.add(Button(res.strings.start, (550, 300), func=self.start_game))
 
 
     def handle_event(self, event: Event, m_pos=(0, 0)):
@@ -43,7 +44,7 @@ class PreGame(Screen):
         self.gui_elements.draw_to(surface)
 
     def start_game(self):
-        self.app_state.settings.write_log = self.toggle_log.get_value() == 'Yes'
+        self.app_state.settings.write_log = self.toggle_log.get_value() == res.strings.yes
         bm = BotManager()
         gahc1 = bm.get_bot_class_by_name(self.toggle1.get_value()) or GUIPlayer
         gahc2 = bm.get_bot_class_by_name(self.toggle2.get_value()) or GUIPlayer

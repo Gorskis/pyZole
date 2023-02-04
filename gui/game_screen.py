@@ -9,20 +9,21 @@ from gui.game_gui_elements import TableCards, GUICardHand, PlayerInfo
 from gui.gui_elements import Button, Text, GuiElementCollection
 from app_state import AppState
 from zole.game_events import GameEvent, EventNames, DiscardCardsEvent, SelectGameModeEvent, PlayCardEvent, \
-    StartSessionEvent, ContinueSessionEvent
+    ContinueSessionEvent
 from zole.game_modes import GameMode
 from zole.game_session import GameSession
 from zole.player import Player
+from resource_manager import resources as res
 
 
 class FogOfWar:
     def __init__(self):
         self.show = True
         self.text: Text = None
-        self.button = Button('Ok', (200, 250), func=self._hide)
+        self.button = Button(res.strings.ready, (200, 250), func=self._hide)
 
     def set_player(self, player: Player):
-        text = f'{player.name} are you ready?'
+        text = res.strings.are_you_ready(player.name)
         self.text = Text(text, (200, 200), color=(0, 0, 0))
 
     def handle_event(self, event: Event, m_pos=(0, 0)):
@@ -41,11 +42,11 @@ class GameModePicker:
     def __init__(self):
         self.show = False
         self.gui_elements = GuiElementCollection()
-        self.gui_elements.add(Text('Spēles veids', (300, 150), color=(0, 0, 0)))
-        self.gui_elements.add(Button('Garām', (300, 200), func=self._pick_pass))
-        self.gui_elements.add(Button('Pacelt', (300, 250), func=self._pick_pacelt))
-        self.gui_elements.add(Button('Zole', (300, 300), func=self._pick_zole))
-        self.gui_elements.add(Button('Mazā zole', (300, 350), func=self._pick_mazazole))
+        self.gui_elements.add(Text(res.strings.game_mode, (300, 150), color=(0, 0, 0)))
+        self.gui_elements.add(Button(res.strings.pass_, (300, 200), func=self._pick_pass))
+        self.gui_elements.add(Button(res.strings.pick_up, (300, 250), func=self._pick_pacelt))
+        self.gui_elements.add(Button(res.strings.zole, (300, 300), func=self._pick_zole))
+        self.gui_elements.add(Button(res.strings.maza_zole, (300, 350), func=self._pick_mazazole))
         self.game_event: SelectGameModeEvent = None
 
     def set_game_action(self, game_event: SelectGameModeEvent):
@@ -79,8 +80,8 @@ class DiscardPicker:
     def __init__(self, hand: GUICardHand):
         self.show = False
         self.gui_elements = GuiElementCollection()
-        self.gui_elements.add(Text('Jānorok divas kartis', (200, 200), color=(0, 0, 0)))
-        self.gui_elements.add(Button('Norakt izvēlētās', (200, 250), func=self._pick_discard))
+        self.gui_elements.add(Text(res.strings.discard_info, (200, 200), color=(0, 0, 0)))
+        self.gui_elements.add(Button(res.strings.discard, (200, 250), func=self._pick_discard))
         self.game_event: DiscardCardsEvent = None
         self.hand = hand
 
@@ -104,8 +105,8 @@ class ContinuePrompt:
     def __init__(self):
         self.show = False
         self.gui_elements = GuiElementCollection()
-        self.gui_elements.add(Button('Spēlēt vēl vienu partiju', (300, 200), func=self._continue))
-        self.gui_elements.add(Button('Beigt spēli', (300, 250), func=self._quit))
+        self.gui_elements.add(Button(res.strings.play_another, (300, 200), func=self._continue))
+        self.gui_elements.add(Button(res.strings.end_game, (300, 250), func=self._quit))
         self.game_event: ContinueSessionEvent = None
 
     def set_game_action(self, game_event: ContinueSessionEvent):
@@ -149,7 +150,7 @@ class GameScreen(Screen):
         self.continue_prompt = ContinuePrompt()
         self.play_card_event: PlayCardEvent = None
 
-        self.gui_elements.add(Button('End game', (400, 20), func=self.end_game))
+        self.gui_elements.add(Button(res.strings.end_game, (400, 20), func=self.end_game))
         self.last_event = None
         self.timer = Timer()
         self.game_logger = None
