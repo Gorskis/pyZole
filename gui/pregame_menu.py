@@ -59,14 +59,12 @@ class PreGame(Screen):
         for gah in gahs:
             if isinstance(gah, GUIPlayer):
                 gui_players.append(gah)
-        game_session = gsf.make_session()
+        self.app_state.game_session = gsf.make_session()
         if len(gui_players) > 0:
-            self.app_state.game_session = game_session
             self.app_state.gui_players = gui_players
             self.app_state.set_screen(AppState.GAME_SCREEN)
         else:
-            # TODO run a non-gui game with n parties
-            self.go_back()
+            self.app_state.set_screen(AppState.BOT_GAME_SCREEN)
 
     def go_back(self):
         self.app_state.set_screen(AppState.MAIN_SCREEN)

@@ -3,7 +3,8 @@ class AppState:
     MAIN_SCREEN = 0
     PRE_GAME_SCREEN = 1
     GAME_SCREEN = 2
-    SETTINGS = 3
+    BOT_GAME_SCREEN = 3
+    SETTINGS = 4
 
     def __init__(self):
         self.exit_app = False

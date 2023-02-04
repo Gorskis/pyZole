@@ -16,6 +16,7 @@ class PlayerResult:
     def __repr__(self):
         return f'{self.player.name}: {"Won" if self.has_won else "lost"}, score: {self.score_change if self.score_change<0 else "+"+str(self.score_change)}'
 
+
 class PartyResults:
     def __init__(self, party: 'Party'):
         self.party = party
@@ -27,7 +28,8 @@ class PartyResults:
         )
 
     def __repr__(self):
-        return f'End of party({self.party.game_mode}, first:{self.party.first_hand}, lielais={self.party.lielais.name}:{self.party.lielais.tricks_score}) > {"Lielais won" if self.lielais_won else "mazais/ie won"}, {self.player_results[0]}, {self.player_results[1]}, {self.player_results[2]}'
+        return f'End of party({self.party.game_mode}, first:{self.party.first_hand}, lielais={self.party.lielais}:{self.party.lielais.tricks_score if self.party.lielais else 0}) > {"Lielais won" if self.lielais_won else "mazais/ie won"}, {self.player_results[0]}, {self.player_results[1]}, {self.player_results[2]}'
+
 
 class Party:
     def __init__(self, players: PlayerCircle):

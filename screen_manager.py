@@ -1,5 +1,6 @@
 from app_state import AppState
 from gui.abstract_screen import Screen
+from gui.bot_game_screen import BotGameScreen
 from gui.game_screen import GameScreen
 from gui.main_menu import MainMenu
 from gui.pregame_menu import PreGame
@@ -11,6 +12,7 @@ class ScreenManager:
         AppState.MAIN_SCREEN: MainMenu,
         AppState.PRE_GAME_SCREEN: PreGame,
         AppState.GAME_SCREEN: GameScreen,
+        AppState.BOT_GAME_SCREEN: BotGameScreen,
         AppState.SETTINGS: Settings
     }
 
@@ -27,6 +29,8 @@ class ScreenManager:
             if screen == AppState.GAME_SCREEN:
                 self.current_screen = ScreenManager.SCREENS[screen](self.app_state, self.app_state.game_session,
                                                                     self.app_state.gui_players)
+            elif screen == AppState.BOT_GAME_SCREEN:
+                self.current_screen = ScreenManager.SCREENS[screen](self.app_state, self.app_state.game_session)
             else:
                 self.current_screen = ScreenManager.SCREENS[screen](self.app_state)
         return self.current_screen
