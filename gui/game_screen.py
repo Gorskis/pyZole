@@ -9,7 +9,7 @@ from gui.game_gui_elements import TableCards, GUICardHand, PlayerInfo
 from gui.gui_elements import Button, Text, GuiElementCollection
 from app_state import AppState
 from zole.game_events import GameEvent, EventNames, DiscardCardsEvent, SelectGameModeEvent, PlayCardEvent, \
-    StartSessionEvent
+    StartSessionEvent, ContinueSessionEvent
 from zole.game_modes import GameMode
 from zole.game_session import GameSession
 from zole.player import Player
@@ -100,6 +100,33 @@ class DiscardPicker:
         self.gui_elements.handle_event(event, m_pos)
 
 
+class ContinuePrompt:
+    def __init__(self):
+        self.show = False
+        self.gui_elements = GuiElementCollection()
+        self.gui_elements.add(Button('Spēlēt vēl vienu partiju', (300, 200), func=self._continue))
+        self.gui_elements.add(Button('Beigt spēli', (300, 250), func=self._quit))
+        self.game_event: ContinueSessionEvent = None
+
+    def set_game_action(self, game_event: ContinueSessionEvent):
+        self.game_event = game_event
+        self.show = True
+
+    def _continue(self):
+        self.game_event.set_continue(True)
+        self.show = False
+
+    def _quit(self):
+        self.game_event.set_continue(False)
+        self.show = False
+
+    def draw_to(self, surface: Surface):
+        self.gui_elements.draw_to(surface)
+
+    def handle_event(self, event: Event, m_pos=(0, 0)):
+        self.gui_elements.handle_event(event, m_pos)
+
+
 class GameScreen(Screen):
     def __init__(self, app_state: AppState, game_session: GameSession, gui_players):
         super().__init__(app_state)
@@ -119,9 +146,10 @@ class GameScreen(Screen):
         #Mutable info window
         self.game_mode_picker = GameModePicker()
         self.discard_picker = DiscardPicker(self.card_Hand)
+        self.continue_prompt = ContinuePrompt()
         self.play_card_event: PlayCardEvent = None
 
-        self.gui_elements.add(Button('End game', (400, 20), func=self.button_clicked))
+        self.gui_elements.add(Button('End game', (400, 20), func=self.end_game))
         self.last_event = None
         self.timer = Timer()
         self.game_logger = None
@@ -133,17 +161,18 @@ class GameScreen(Screen):
             game_event = self.game_session.update()
             if game_event != self.last_event:
                 self.last_event = game_event
-                if game_event.name == EventNames.ContinueSessionEvent:
-                    print('Party ended, long live the party!')
-                    game_event.set_continue(True)
-                elif game_event.name == EventNames.CardPlayedEvent:
-                    self.timer.set_timer(1)
                 if self.game_logger:
                     self.game_logger.log(game_event)
 
+                if game_event.name == EventNames.ContinueSessionEvent:
+                    self.continue_prompt.set_game_action(game_event)
+                elif game_event.name == EventNames.CardPlayedEvent:
+                    self.timer.set_timer(1)
+                elif game_event.name == EventNames.SessionEndedEvent:
+                    self.end_game()
+
                 gui_player = self.last_player or self.gui_players[0]
-                self.set_player_view_for(gui_player, StartSessionEvent())
-                    # updates hand & table StartSessionEvent is just stub to not have None
+                self.set_player_view_for(gui_player, GameEvent('Stub', gui_player))
 
     def draw_to(self, surface: Surface):
         surface.fill((0, 0, 0))
@@ -161,8 +190,9 @@ class GameScreen(Screen):
         self.card_Hand.draw_to(surface)
         if self.game_mode_picker.show:
             self.game_mode_picker.draw_to(surface)
-            return
-        if self.discard_picker.show:
+        elif self.continue_prompt.show:
+            self.continue_prompt.draw_to(surface)
+        elif self.discard_picker.show:
             self.discard_picker.draw_to(surface)
 
         self.table_cards.draw_to(surface, self.game_session.current_party.table.trick, self.last_player)
@@ -175,10 +205,11 @@ class GameScreen(Screen):
         last_card_clicked = self.card_Hand.handle_event(event.type == pygame.MOUSEBUTTONUP and event.button == 1, m_pos)
         if self.game_mode_picker.show:
             self.game_mode_picker.handle_event(event, m_pos)
-            return
-        if self.discard_picker.show:
+        elif self.continue_prompt.show:
+            self.continue_prompt.handle_event(event, m_pos)
+        elif self.discard_picker.show:
             self.discard_picker.handle_event(event, m_pos)
-            return
+
         if self.play_card_event and last_card_clicked:
             first_card = self.play_card_event.trick.first_card()
             valid_cards = self.play_card_event.player.hand.get_valid_cards(first_card)
@@ -190,7 +221,7 @@ class GameScreen(Screen):
                 pass
                 # print(f'Card {last_card_clicked} not in valid cards {valid_cards}')
 
-    def button_clicked(self):
+    def end_game(self):
         if self.game_logger:
             self.game_logger.close()
         self.app_state.set_screen(AppState.MAIN_SCREEN)
