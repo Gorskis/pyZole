@@ -1,6 +1,7 @@
 from typing import Tuple
 
 from bots.Rando_Calrissian import RandoCalrissian
+from bots.MultiLayerNetwork import MultiLayerNetwork
 
 
 class BotManager:
@@ -12,6 +13,7 @@ class BotManager:
     def __init__(self):
         self.bots = (  # List bots here!
             RandoCalrissian,
+            MultiLayerNetwork
         )
         self.names = [None] * len(self.bots)
         _ = 0

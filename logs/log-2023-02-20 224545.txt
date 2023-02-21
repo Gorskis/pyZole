@@ -1,0 +1,10 @@
+Session started
+New party; first_hand: Player A
+Cards; Player A: [♣Q,♦A,♦10,♦9,♦7,♠10,♥K,♥9]
+Cards; Player B: [♦Q,♣J,♠J,♥J,♦J,♣10,♣9,♠K]
+Cards; Player C: [♠Q,♥Q,♦8,♣A,♣K,♠A,♠9,♥A]
+Cards; table: [♥10,♦K]
+Game mode selected; mode: Zole; by: Player A
+Role; Player A:Zole
+Role; Player B:Mazais
+Role; Player C:Mazais
