@@ -154,6 +154,13 @@ class Cards:
         else:
             return '[]'
 
+    def as_array(self):
+        arr = [0]*26
+        for card in self:
+            if card != no_card:
+                arr[card.i] = 1
+        return arr
+
 
 def new_card_is_stronger(top_card: Card, new_card: Card):
     if top_card.is_trump:
