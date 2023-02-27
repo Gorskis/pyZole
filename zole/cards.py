@@ -154,11 +154,19 @@ class Cards:
         else:
             return '[]'
 
-    def as_array(self):
+    def as_input_array(self):
         arr = [0]*26
         for card in self:
             if card != no_card:
                 arr[card.i] = 1
+        return arr
+
+    def as_index_array(self):
+        if self.size < 1:
+            return []
+        arr = [0] * self.size
+        for i in range(self.size):
+            arr[i] = self.cards[i].i
         return arr
 
 
