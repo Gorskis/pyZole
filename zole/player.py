@@ -48,7 +48,14 @@ class PlayerCircle:
         return res
 
     def index(self, player):
-        self.players.index(player)
+        # self.players.index(player)  # doesn't work for some reason
+        if self.players[0] == player:
+            return 0
+        elif self.players[1] == player:
+            return 1
+        elif self.players[2] == player:
+            return 2
+        return -1
 
     def first(self):
         return self.players[0]
