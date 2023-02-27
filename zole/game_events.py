@@ -60,10 +60,11 @@ class PartyStartedEvent(GameEvent):
 
 
 class SelectGameModeEvent(GameEvent):
-    def __init__(self, player: Player):
+    def __init__(self, player: Player, prev_selectors: int):
         super().__init__(EventNames.SelectGameModeEvent, player)
         # player is selector
         self.selected_game_mode: GameMode = None
+        self.prev_selectors = prev_selectors
 
     def set_selected_game_mode(self, mode: GameMode):
         self.selected_game_mode = mode

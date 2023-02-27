@@ -29,18 +29,19 @@ class GameSession:
             self._shuffle_and_deal()
             next_event = PartyStartedEvent(self.current_party)
         elif self.current_event.name == EventNames.PartyStartedEvent:  # <<< PartyStartedEvent
-            next_event = SelectGameModeEvent(self.current_event.party.first_hand)
+            next_event = SelectGameModeEvent(self.current_event.party.first_hand, 0)
             handler = next_event.player
         elif self.current_event.name == EventNames.SelectGameModeEvent:  # <<< SelectGameModeEvent
             player: Player = self.current_event.player
             game_mode: GameMode = self.current_event.selected_game_mode
+            prev_selectors: int = self.current_event.prev_selectors
             if game_mode == GameMode.PASS:
                 next_player = player.next_player
                 if next_player == self.current_party.first_hand:
                     self.current_party.resolve_game_mode(None, GameMode.GALDINS)
                     next_event = GameModeSelectedEvent(player, GameMode.GALDINS, self.current_party)
                 else:
-                    next_event = SelectGameModeEvent(next_player)
+                    next_event = SelectGameModeEvent(next_player, prev_selectors + 1)
                     handler = next_player
             else:
                 self.current_party.resolve_game_mode(player, game_mode)
