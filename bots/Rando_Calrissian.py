@@ -19,7 +19,7 @@ class RandoCalrissian(Bot):
             pass
         elif event.name == EventNames.SelectGameModeEvent:
             modes = [GameMode.PASS, GameMode.PACELT, GameMode.ZOLE, GameMode.MAZAZOLE]
-            selected_game_mode = self.rand.choices(modes, [0.3, 0.4, 0.2, 0.1])[0]
+            selected_game_mode = self.rand.choices(modes, [0.5, 0.5, 0, 0])[0]
             event.set_selected_game_mode(selected_game_mode)
         elif event.name == EventNames.GameModeSelectedEvent:
             # game_mode = event.selected_game_mode

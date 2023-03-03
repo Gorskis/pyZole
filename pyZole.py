@@ -7,7 +7,7 @@ from screen_manager import ScreenManager
 from settings import AppSettings
 
 if __name__ == '__main__':
-    pygame.init()
+    pygame.init() 
     screen_data = BorderedScreen((1000, 562))
     pygame.display.set_caption("pyZole")
     pygame.display.set_icon(resources.window_icon)
