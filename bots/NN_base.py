@@ -46,7 +46,7 @@ def createFullTrick_FromData(jsonTrick, players : zole.player.PlayerCircle):
 
 def CardOnTableToAllowedCards(CardOnTable):
     allowedCards = np.zeros(26)
-    if CardOnTable==None:
+    if CardOnTable==None or CardOnTable==999:
         return np.ones(26)
     elif CardOnTable<=13: #Trumps
         for i in range(14):
@@ -183,12 +183,12 @@ def jsonToTrainData(dataFolder, gametypesAllowed):
     count = 0
     for game in gameListFiltered:
         count+=1
-        if count%50000==0:
+        if count%20000==0:
             print(f'Data formatting progress: {round(count/len_forProgress,3)*100}%')
         for player in range(3): 
             gameResult = game['game_points'][player]
-            if gameResult<0:
-                continue
+            # if gameResult<0:  #filter games where the player didn't win
+            #     continue
             gameType = game['game']['type']
             players = PlayerCircle(Player('1'), Player('2'), Player('3'))
             players = givePlayersRoles(players, gameType, game['game']['type_user'])
@@ -221,17 +221,17 @@ def jsonToTrainData(dataFolder, gametypesAllowed):
                 y_card = np.zeros(26)
                 for i in range(26):
                     if i==cardPlayed:
-                        y_card[i]=1
+                        y_card[i]=state.resultRelative
                 
                 y_Available = np.zeros(26)
                 for card in curHand:
                     y_Available[card.i] = 1
                 trickClass = createFullTrick_FromData(trick, players)
                 
-                #if trickClass.tacker()==players[player]:
+                #if len(curHand)>4: #trickClass.tacker()==players[player] and
                 data_x_minimal.append(state.stateToInputArray_minimal())
-                data_x.append(state.stateToInputArray())
-                data_y_result.append(state.stateToOutputArray_Result())
+                #data_x.append(state.stateToInputArray())
+                #data_y_result.append(state.stateToOutputArray_Result())
                 data_y_card.append(y_card)
                 data_mask.append(CardOnTableToAllowedCards(firstCardTable.i)*y_Available)
 
@@ -251,7 +251,6 @@ def jsonToTrainData(dataFolder, gametypesAllowed):
     data_y_card = torch.FloatTensor(np.array(data_y_card))
     data_mask = torch.FloatTensor(np.array(data_mask))
     return data_x,data_x_minimal, data_y_result, data_y_card, data_mask
-
 
 def tensorToCard(tensor):
     maxVal = max(tensor)

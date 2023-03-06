@@ -75,7 +75,7 @@ class Experiment3(Bot):
         super().__init__(player_name)
         self.rand = Random()
         
-        pathName = 'Resources/model_'+Experiment3.bot_name+'.pkl'
+        pathName = 'Resources/Models/'+Experiment3.bot_name+'.pkl'
         if path.isfile(pathName):
             self.network = MainNetwork()
             self.network.model = torch.load(pathName)
@@ -93,10 +93,10 @@ class Experiment3(Bot):
             # my_cards = self.hand
             # party = event.party
             # TODO get my position in seating
-            pass
+            pass    
         elif event.name == EventNames.SelectGameModeEvent:
             modes = [GameMode.PASS, GameMode.PACELT, GameMode.ZOLE, GameMode.MAZAZOLE]
-            selected_game_mode = self.rand.choices(modes, [0.5, 0.5, 0, 0])
+            selected_game_mode = self.rand.choices(modes, [0.5, 0.5, 0, 0])[0]
             event.set_selected_game_mode(selected_game_mode)
         elif event.name == EventNames.GameModeSelectedEvent:
             # game_mode = event.selected_game_mode

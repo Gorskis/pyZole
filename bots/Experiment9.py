@@ -34,7 +34,7 @@ class MainNetwork:
 
     def trainModel(self):
         print('Model training started')
-        loss_function = nn.MSELoss()
+        loss_function = nn.CrossEntropyLoss()#.MSELoss()
         optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
         for epoch in range(self.epochCount):
             if epoch%100==0:
@@ -87,14 +87,14 @@ class MainNetwork:
         secondCardTable = trick.cards[1].i
         return self.turnInputStateIntoArray(hand, firstCardTable, secondCardTable)
 
-class Experiment1(Bot):
-    bot_name = 'Experiment1'
+class Experiment9(Bot):
+    bot_name = 'Experiment9'
     
     def __init__(self, player_name: str):
         super().__init__(player_name)
         self.rand = Random()
 
-        pathName = 'Resources/Models'+Experiment1.bot_name+'.pkl'
+        pathName = 'Resources/Models/'+Experiment9.bot_name+'.pkl'
         if path.isfile(pathName):
             self.network = MainNetwork()
             self.network.model = torch.load(pathName)

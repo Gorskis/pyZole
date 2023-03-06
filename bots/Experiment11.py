@@ -8,7 +8,6 @@ import zole.player
 import bots.NN_base as NN_base
 import bots.DataSetup as data
 
-import json
 import numpy as np
 import torch
 import torch.nn as nn
@@ -18,28 +17,37 @@ class MainNetwork:
     def __init__(self):
         self.gameListFiltered =[]
         self.n_input = 26*3
-        self.n_hidden = 26*2
+        self.n_hidden = 26*10
         self.n_out = 26
         self.learning_rate = 0.01
-        self.epochCount = 50
+        self.epochCount = 500
 
         self.data_x = data.data_x_minimal
         self.data_y = data.data_y_card
+        self.data_mask = data.data_mask
 
     def initializeModel(self):
         self.model = nn.Sequential(nn.Linear(self.n_input, self.n_hidden),
                       nn.ReLU(),
+                      nn.Linear(self.n_hidden, self.n_hidden),
+                      nn.ReLU(),
+                      nn.Linear(self.n_hidden, self.n_hidden),
+                      nn.ReLU(),
                       nn.Linear(self.n_hidden, self.n_out),
                       nn.Sigmoid())
 
+    def forward(self, input, mask):
+        rawOutput = self.model(input)
+        return rawOutput*mask
+
     def trainModel(self):
         print('Model training started')
-        loss_function = nn.MSELoss()
+        loss_function = nn.CrossEntropyLoss()
         optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
         for epoch in range(self.epochCount):
-            if epoch%100==0:
+            if epoch%10==0:
                 print(f'Model training progress: {round(100*epoch/self.epochCount,3)}%')
-            pred_y = self.model(self.data_x)
+            pred_y = self.forward(self.data_x, self.data_mask)
 
             loss_Chosen = loss_function(pred_y, self.data_y)                           # Vai prognoztā kārts sakrīt ar spēlētāja izvēli
             
@@ -76,8 +84,8 @@ class MainNetwork:
             if tensor[i]==chosenCardVal:
                 return zole.cards.all_cards[i]
     
-    def playCard(self, input):
-        outputTensor = self.model(torch.FloatTensor(input))
+    def playCard(self, input, mask):
+        outputTensor = self.forward(torch.FloatTensor(input), torch.FloatTensor(mask))
         self.output = outputTensor
         return self.tensorToCard(outputTensor)
     
@@ -87,14 +95,14 @@ class MainNetwork:
         secondCardTable = trick.cards[1].i
         return self.turnInputStateIntoArray(hand, firstCardTable, secondCardTable)
 
-class Experiment1(Bot):
-    bot_name = 'Experiment1'
+class Experiment11(Bot):
+    bot_name = 'Experiment11'
     
     def __init__(self, player_name: str):
         super().__init__(player_name)
         self.rand = Random()
 
-        pathName = 'Resources/Models'+Experiment1.bot_name+'.pkl'
+        pathName = 'Resources/Models/'+self.bot_name+'.pkl'
         if path.isfile(pathName):
             self.network = MainNetwork()
             self.network.model = torch.load(pathName)
@@ -133,7 +141,7 @@ class Experiment1(Bot):
             trick = event.trick
             input = self.network.formatInput(self, trick)
             valid_cards = self.hand.get_valid_cards(trick.first_card())
-            card_to_play = self.network.playCard(input)     
+            card_to_play = self.network.playCard(input, valid_cards.as_input_array())     
             if card_to_play in valid_cards:
                 event.play_card(card_to_play)
             else:

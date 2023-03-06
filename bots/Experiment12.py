@@ -5,14 +5,13 @@ from zole.game_modes import GameMode
 import zole.cards
 from zole.trick import Trick
 import zole.player
-import bots.NN_base as NN_base
 import bots.DataSetup as data
 
-import json
 import numpy as np
 import torch
 import torch.nn as nn
 import os.path as path
+import math
 
 class MainNetwork:
     def __init__(self):
@@ -20,34 +19,43 @@ class MainNetwork:
         self.n_input = 26*3
         self.n_hidden = 26*2
         self.n_out = 26
-        self.learning_rate = 0.01
-        self.epochCount = 50
+        self.learning_rate = 0.05
+        self.epochCount = 500
+        self.countCorrect = 0
+        self.countIncorrect = 0
 
         self.data_x = data.data_x_minimal
-        self.data_y = data.data_y_card
+        self.data_mask = data.data_mask
 
     def initializeModel(self):
         self.model = nn.Sequential(nn.Linear(self.n_input, self.n_hidden),
-                      nn.ReLU(),
+                      nn.ELU(),
                       nn.Linear(self.n_hidden, self.n_out),
                       nn.Sigmoid())
 
     def trainModel(self):
         print('Model training started')
-        loss_function = nn.MSELoss()
+        loss_function = nn.CrossEntropyLoss()
         optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
         for epoch in range(self.epochCount):
-            if epoch%100==0:
+            if epoch%10==0:
                 print(f'Model training progress: {round(100*epoch/self.epochCount,3)}%')
             pred_y = self.model(self.data_x)
 
-            loss_Chosen = loss_function(pred_y, self.data_y)                           # Vai prognoztā kārts sakrīt ar spēlētāja izvēli
-            
+            loss_Chosen = loss_function(pred_y, self.data_mask)
             self.model.zero_grad()   
             loss_Chosen.backward()  #Šeit loss_Chosen jāaizstāj ar to, pēc kura grib trenēt
 
             optimizer.step()
         print('Model training complete')
+
+    def loss_masked(self, pred_y, y, loss_function):
+    	# error of elements where y is not 0
+        masked_pred = torch.multiply(pred_y, y)
+        MSE = loss_function(masked_pred, y)
+        #multiplier = 26*len(y)/torch.sum(y)
+        MSEMult = torch.mul(MSE, 26*len(y)/torch.sum(y))
+        return MSEMult
 
     def turnInputStateIntoArray(self, cardsOnHand, firstCardTable, secondCardTable):
         array = np.zeros(26*3)
@@ -76,7 +84,7 @@ class MainNetwork:
             if tensor[i]==chosenCardVal:
                 return zole.cards.all_cards[i]
     
-    def playCard(self, input):
+    def playCard(self, input, mask):
         outputTensor = self.model(torch.FloatTensor(input))
         self.output = outputTensor
         return self.tensorToCard(outputTensor)
@@ -87,14 +95,14 @@ class MainNetwork:
         secondCardTable = trick.cards[1].i
         return self.turnInputStateIntoArray(hand, firstCardTable, secondCardTable)
 
-class Experiment1(Bot):
-    bot_name = 'Experiment1'
+class Experiment12(Bot):
+    bot_name = 'Experiment12'
     
     def __init__(self, player_name: str):
         super().__init__(player_name)
         self.rand = Random()
 
-        pathName = 'Resources/Models'+Experiment1.bot_name+'.pkl'
+        pathName = 'Resources/Models/'+self.bot_name+'.pkl'
         if path.isfile(pathName):
             self.network = MainNetwork()
             self.network.model = torch.load(pathName)
@@ -133,10 +141,12 @@ class Experiment1(Bot):
             trick = event.trick
             input = self.network.formatInput(self, trick)
             valid_cards = self.hand.get_valid_cards(trick.first_card())
-            card_to_play = self.network.playCard(input)     
+            card_to_play = self.network.playCard(input, valid_cards.as_input_array())     
             if card_to_play in valid_cards:
+                self.network.countCorrect+=1
                 event.play_card(card_to_play)
             else:
+                self.network.countIncorrect+=1
                 event.play_card(valid_cards[self.rand.randint(0, len(valid_cards) - 1)])
         elif event.name == EventNames.TrickEndedEvent:
             trick = event.trick
