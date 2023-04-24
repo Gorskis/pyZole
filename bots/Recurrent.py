@@ -3,8 +3,8 @@ from random import Random
 from zole.game_events import GameEvent, EventNames
 from zole.game_modes import GameMode
 import zole.cards
-import bots.stateEval
 import bots.NN_base as NN_base
+from bots.DataSetup import DataPaths as data
 
 import json
 import numpy as np
@@ -44,7 +44,6 @@ class MainNetwork:
                       nn.ReLU())
         
     def forward(self, x, mask):
-
         output = self.model(x)
         maskedOutput = output*mask
         softM = nn.Softmax()
@@ -83,13 +82,6 @@ class MainNetwork:
         if secondCardTable != None:
             array[secondCardTable+52] = 1
         return array
-
-    def removeSpentCard(self, cardsOnHand, spentCardNumber):
-        newHand = []
-        for card in cardsOnHand:
-            if card !=spentCardNumber:
-                newHand.append(card)
-        return newHand
 
     def tensorToCard(self, tensor):
         chosenCardVal = max(tensor)
@@ -135,11 +127,11 @@ class Recurrent(Bot):
         self.network.trainModel()
         self.network.setupSelfTraining()
 
-        self.stateEvalNetwork = bots.stateEval.stateEvalNN()
-        self.stateEvalNetwork.initializeModel()
-        self.stateEvalNetwork.trainModel()
-        self.prevStateEval = None
-        self.archives = []
+        # self.stateEvalNetwork = bots.stateEval.stateEvalNN()
+        # self.stateEvalNetwork.initializeModel()
+        # self.stateEvalNetwork.trainModel()
+        # self.prevStateEval = None
+        # self.archives = []
 
     def handle_game_event(self, event: GameEvent):
         if event.name == EventNames.PartyStartedEvent:

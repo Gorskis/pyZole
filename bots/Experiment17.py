@@ -5,14 +5,14 @@ from zole.game_modes import GameMode
 import zole.cards
 from zole.trick import Trick
 import zole.player
-import bots.NN_base as NN_base
-import bots.DataSetup as data
-
-import json
+from bots.DataSetup import DataPaths as data
+from bots.DataSetup import checkExistance
+from bots.DataSetup import loadData
 import numpy as np
 import torch
 import torch.nn as nn
 import os.path as path
+import math
 
 class MainNetwork:
     def __init__(self):
@@ -23,36 +23,56 @@ class MainNetwork:
         self.learning_rate = 0.01
         self.epochCount = 50
 
-        self.data_x = data.data_x_minimal
-        self.data_y = data.data_y_card
-        self.data_mask = data.data_mask
+        self.correctCount = 0
+        self.incorrectCount = 0
 
     def initializeModel(self):
         self.model = nn.Sequential(nn.Linear(self.n_input, self.n_hidden),
-                      nn.ReLU(),
+                      nn.ELU(),
                       nn.Linear(self.n_hidden, self.n_out),
-                      nn.Sigmoid())
-
-    def forward(self, input, mask):
-        rawOutput = self.model(input)
-        return rawOutput*mask
+                      nn.Tanh())
 
     def trainModel(self):
         print('Model training started')
-        loss_function = nn.MSELoss()
-        optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
-        for epoch in range(self.epochCount):
-            if epoch%100==0:
-                print(f'Model training progress: {round(100*epoch/self.epochCount,3)}%')
-            pred_y = self.forward(self.data_x, self.data_mask)
-
-            loss_Chosen = loss_function(pred_y, self.data_y)                           # Vai prognoztā kārts sakrīt ar spēlētāja izvēli
-            
-            self.model.zero_grad()   
-            loss_Chosen.backward()  #Šeit loss_Chosen jāaizstāj ar to, pēc kura grib trenēt
-
-            optimizer.step()
+        self.MSELoss = nn.MSELoss()
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
+        self.trainOnParts(self.loss_masked_mask) #training with mask (legality)
+        self.trainOnParts(self.loss_masked_result) #training with card choices
         print('Model training complete')
+
+    def trainOnParts(self, loss_function):
+        i = 0
+        partCount = self.countFiles()
+        while checkExistance(data.X_MIN, i):
+            print('Model training on part '+ str(i+1) + '/' + str(partCount))
+            data_x = loadData(data.X_MIN, i)
+            data_mask = loadData(data.MASK, i)
+            data_result = loadData(data.RESULT, i)
+            for epoch in range(self.epochCount):
+                pred_y = self.model(data_x)
+                loss = self.loss_masked(pred_y, data_mask, data_result, loss_function)
+                self.model.zero_grad()   
+                loss.backward()
+                self.optimizer.step()
+            i+=1
+
+    def loss_masked(self, pred_y, mask, y, specificLossFunction):
+        masked_pred = torch.mul(pred_y, mask)
+        Loss = specificLossFunction(masked_pred, mask, y)
+        return torch.mul(Loss, 26*len(y)/torch.sum(y))  #tā kā tiek ņemta vērā tikai daļa vērtību, jāsareizina lai loss būtu tādā mērogā, it kā būt visas
+
+    def loss_masked_result(self, masked_pred, mask, y):
+        expected_card_result = torch.mul(mask, y)
+        return self.MSELoss(masked_pred, expected_card_result)
+    
+    def loss_masked_mask(self, masked_pred, mask, y):
+        return self.MSELoss(masked_pred, mask)
+
+    def countFiles(self):
+        i = 0
+        while checkExistance(data.X_MIN, i):
+            i+=1
+        return i
 
     def turnInputStateIntoArray(self, cardsOnHand, firstCardTable, secondCardTable):
         array = np.zeros(26*3)
@@ -66,17 +86,17 @@ class MainNetwork:
 
     def tensorToCard(self, tensor):
         chosenCardVal = max(tensor)
-        # Ja atļauti bija tikai slikti varianti, labākajai izvēlei būs negatīva vērtība un tik izvēlēta pirmā no aizliegtajām kārtīm, jo tām ir 0
-        if chosenCardVal == 0:
-            tensor *=-1
-            chosenCardVal = min(tensor)
         for i in range(len(tensor)):
             if tensor[i]==chosenCardVal:
                 return zole.cards.all_cards[i]
     
-    def playCard(self, input, mask):
-        outputTensor = self.forward(torch.FloatTensor(input), torch.FloatTensor(mask))
+    def playCard(self, input, validCards):
+        outputTensor = self.model(torch.FloatTensor(input))
         self.output = outputTensor
+        card = self.tensorToCard(outputTensor)
+        while card not in validCards:
+            outputTensor[card.i] = -1
+            card = self.tensorToCard(outputTensor)
         return self.tensorToCard(outputTensor)
     
     def formatInput(self, player:Bot, trick:Trick):
@@ -85,14 +105,14 @@ class MainNetwork:
         secondCardTable = trick.cards[1].i
         return self.turnInputStateIntoArray(hand, firstCardTable, secondCardTable)
 
-class Experiment1_mask(Bot):
-    bot_name = 'Experiment1_mask'
+class Experiment17(Bot):
+    bot_name = 'Experiment17'
     
     def __init__(self, player_name: str):
         super().__init__(player_name)
         self.rand = Random()
 
-        pathName = 'Resources/Models'+Experiment1_mask.bot_name+'.pkl'
+        pathName = 'Resources/Models/'+self.bot_name+'.pkl'
         if path.isfile(pathName):
             self.network = MainNetwork()
             self.network.model = torch.load(pathName)
@@ -104,7 +124,7 @@ class Experiment1_mask(Bot):
             self.network.trainModel()
             torch.save(self.network.model, pathName)
             print('Model Trained')
-
+        
         
 
     def handle_game_event(self, event: GameEvent):
@@ -131,11 +151,13 @@ class Experiment1_mask(Bot):
             trick = event.trick
             input = self.network.formatInput(self, trick)
             valid_cards = self.hand.get_valid_cards(trick.first_card())
-            card_to_play = self.network.playCard(input, valid_cards.as_input_array())     
+            card_to_play = self.network.playCard(input, valid_cards)     
             if card_to_play in valid_cards:
+                self.network.correctCount+=1
                 event.play_card(card_to_play)
             else:
                 event.play_card(valid_cards[self.rand.randint(0, len(valid_cards) - 1)])
+                self.network.incorrectCount+=1
         elif event.name == EventNames.TrickEndedEvent:
             trick = event.trick
             taker_of_the_trick = trick.tacker()

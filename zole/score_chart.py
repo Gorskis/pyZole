@@ -21,8 +21,8 @@ POINTS = {
         '0t': (-16, 8)
     },
     GameMode.MAZAZOLE: {
-        '1+': (-8, 4),
-        '0t': (6, 3)
+        '1+': (-14, 7),
+        '0t': (12, -6)
     },
     GameMode.GALDINS: (4, -2)
 }

@@ -11,7 +11,7 @@ if __name__ == '__main__':
     screen_data = BorderedScreen((1000, 562))
     pygame.display.set_caption("pyZole")
     pygame.display.set_icon(resources.window_icon)
-    clock = pygame.time.Clock()
+    clock = pygame.time.Clock() 
     done = False
     app_state = AppState()
     app_state.settings = AppSettings()

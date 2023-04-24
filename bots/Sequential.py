@@ -4,7 +4,6 @@ from zole.game_events import GameEvent, EventNames
 from zole.game_modes import GameMode
 import zole.cards
 import zole.player
-import bots.stateEval
 import bots.NN_base as NN_base
 from bots.NN_base import Archive
 import os.path as path
@@ -135,13 +134,6 @@ class MainNetwork:
         if secondCardTable != None:
             array[secondCardTable+52] = 1
         return array
-
-    def removeSpentCard(self, cardsOnHand, spentCardNumber):
-        newHand = []
-        for card in cardsOnHand:
-            if card !=spentCardNumber:
-                newHand.append(card)
-        return newHand
 
     def tensorToCard(self, tensor):
         chosenCardVal = max(tensor)

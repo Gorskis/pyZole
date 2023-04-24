@@ -1,0 +1,10 @@
+*.json
+*.csv
+resources/1m_Rand*
+resources/Complexity1*
+resources/Complexity2*
+resources/Complexity3*
+resources/Hand*
+__pycache__*
+
+

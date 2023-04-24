@@ -20,7 +20,7 @@ class MainNetwork:
         self.n_hidden = 26*2
         self.n_out = 26
         self.learning_rate = 0.05
-        self.epochCount = 500
+        self.epochCount = 150
         self.countCorrect = 0
         self.countIncorrect = 0
 
@@ -42,19 +42,19 @@ class MainNetwork:
                 print(f'Model training progress: {round(100*epoch/self.epochCount,3)}%')
             pred_y = self.model(self.data_x)
 
-            loss_Chosen = loss_function(pred_y, self.data_mask)
+            loss = loss_function(pred_y, self.data_mask)
             self.model.zero_grad()   
-            loss_Chosen.backward()  #Šeit loss_Chosen jāaizstāj ar to, pēc kura grib trenēt
+            loss.backward()
 
             optimizer.step()
         print('Model training complete')
 
-    def loss_masked(self, pred_y, y, loss_function):
+    def loss_masked(self, pred_y, mask, loss_function):
     	# error of elements where y is not 0
-        masked_pred = torch.multiply(pred_y, y)
-        MSE = loss_function(masked_pred, y)
+        masked_pred = torch.mul(pred_y, mask)
+        MSE = loss_function(masked_pred, mask)
         #multiplier = 26*len(y)/torch.sum(y)
-        MSEMult = torch.mul(MSE, 26*len(y)/torch.sum(y))
+        MSEMult = torch.mul(MSE, 26*len(mask)/torch.sum(mask))
         return MSEMult
 
     def turnInputStateIntoArray(self, cardsOnHand, firstCardTable, secondCardTable):
@@ -66,13 +66,6 @@ class MainNetwork:
         if secondCardTable != None and secondCardTable != 999:
             array[secondCardTable+52] = 1
         return array
-
-    def removeSpentCard(self, cardsOnHand, spentCardNumber):
-        newHand = []
-        for card in cardsOnHand:
-            if card !=spentCardNumber:
-                newHand.append(card)
-        return newHand
 
     def tensorToCard(self, tensor):
         chosenCardVal = max(tensor)

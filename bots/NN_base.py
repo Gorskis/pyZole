@@ -4,11 +4,11 @@ from zole.trick import Trick
 from bots.bot import Bot
 from zole.player import PlayerCircle, Player
 from zole.cards import all_cards, no_card
-
 import os.path as path
 import json
 import numpy as np
 import torch
+import random as rand
 
 def givePlayersRoles(players: zole.player.PlayerCircle, gameType, type_user):
     for player in players:
@@ -158,10 +158,25 @@ class gameState:
             array[self.secondCardTable.i+52] = 1
         return array
     
+    def stateToInputArray_minimal2(self):
+        array = np.zeros(26*3)
+        for card in self.hand:
+            array[card.i] = 1
+        if self.firstCardTable != None and self.firstCardTable != no_card:
+            array[self.firstCardTable.i+26] = 1
+        if self.secondCardTable != None and self.secondCardTable != no_card:
+            array[self.secondCardTable.i+52] = 1
+        return array
+    
     def stateToOutputArray_Result(self):
         return np.array(self.resultRelative) #tikai viens elements no 0 līdz 1
 
 def jsonToTrainData(dataFolder, gametypesAllowed):
+    X = 'Resources/'+ dataFolder +'/data_x'
+    X_MIN = 'Resources/'+ dataFolder +'/data_x_minimal'
+    RESULT = 'Resources/'+ dataFolder +'/data_y_result'
+    CARD = 'Resources/'+ dataFolder +'/data_y_card'
+    MASK = 'Resources/'+ dataFolder +'/data_mask'
     #Opens the chosen folders data file
     with open("Resources/"+dataFolder+"/data.json", "r") as read_file:
         data = json.load(read_file)
@@ -179,6 +194,7 @@ def jsonToTrainData(dataFolder, gametypesAllowed):
     data_y_result = []
     data_y_card = []
     data_mask = []
+    fileNum = 0
     len_forProgress = len(gameListFiltered)
     count = 0
     for game in gameListFiltered:
@@ -229,9 +245,17 @@ def jsonToTrainData(dataFolder, gametypesAllowed):
                 trickClass = createFullTrick_FromData(trick, players)
                 
                 #if len(curHand)>4: #trickClass.tacker()==players[player] and
-                data_x_minimal.append(state.stateToInputArray_minimal())
-                #data_x.append(state.stateToInputArray())
-                #data_y_result.append(state.stateToOutputArray_Result())
+                cardsToIntArray(curHand)
+                x = np.zeros(26*3+1+2)
+                x_tensor = turnInputStateIntoArray(cardsToIntArray(curHand), firstCardTable.i, secondCardTable.i, array = x)
+                if hasTrump(curHand):
+                    x_tensor[26*3] = 1
+                if players[0].role == players[player].role and firstCardTable!=no_card:
+                    x_tensor[26*3+1] = 1
+                if players[1] == players[player].role and secondCardTable != no_card:
+                    x_tensor[26*3+2] = 1
+                data_x.append(x_tensor)
+                data_y_result.append(state.stateToOutputArray_Result())
                 data_y_card.append(y_card)
                 data_mask.append(CardOnTableToAllowedCards(firstCardTable.i)*y_Available)
 
@@ -245,12 +269,31 @@ def jsonToTrainData(dataFolder, gametypesAllowed):
                     pointsYou+=trickpoints
                 else:
                     pointsThem+=trickpoints
-    data_x = torch.FloatTensor(np.array(data_x))
-    data_x_minimal = torch.FloatTensor(np.array(data_x_minimal))
-    data_y_result = torch.FloatTensor(np.array(data_y_result))
-    data_y_card = torch.FloatTensor(np.array(data_y_card))
-    data_mask = torch.FloatTensor(np.array(data_mask))
-    return data_x,data_x_minimal, data_y_result, data_y_card, data_mask
+                if len(data_x) >= 1000000:
+                    data_x = torch.FloatTensor(np.array(data_x))
+                    data_x_minimal = torch.FloatTensor(np.array(data_x_minimal))
+                    data_y_result = torch.FloatTensor(np.array(data_y_result))
+                    data_y_result = torch.reshape(data_y_result, [len(data_y_result), 1])
+                    data_y_card = torch.FloatTensor(np.array(data_y_card))
+                    data_mask = torch.FloatTensor(np.array(data_mask))
+                    torch.save(data_x, X + str(fileNum))
+                    torch.save(data_x_minimal, X_MIN + str(fileNum))
+                    torch.save(data_y_result, RESULT + str(fileNum))
+                    torch.save(data_y_card, CARD + str(fileNum))
+                    torch.save(data_mask, MASK + str(fileNum))
+                    data_x = [] 
+                    data_x_minimal = []
+                    data_y_result = []
+                    data_y_card = []
+                    data_mask = []
+                    print("part " + str(fileNum) + " of data saved")
+                    fileNum+=1
+
+def hasTrump(cards:zole.cards.Cards):
+    for card in cards:
+        if card.is_trump:
+            return True
+    return False
 
 def tensorToCard(tensor):
     maxVal = max(tensor)
@@ -277,13 +320,22 @@ def cardsToTensor(cards:zole.cards.Cards):
     return torch.FloatTensor(tensor)
 
 def intArrayToTensor(cards):
-    tensor = np.zeros(26)
-    for card in cards:
-        tensor[card] = 1
-    return torch.FloatTensor(tensor)
+    return torch.FloatTensor(intArrayToIndexArr(cards))
 
-def turnInputStateIntoArray(cardsOnHand, firstCardTable, secondCardTable):
-    array = np.zeros(26*3)
+def intArrayToIndexArr(cards):
+    arr = np.zeros(26)
+    for card in cards:
+        arr[card] = 1
+    return arr
+
+def indexArrToIntArr(arr):
+    cards = []
+    for i in range(26):
+        if arr[i]==1:
+            cards.append(i)
+    return cards
+
+def turnInputStateIntoArray(cardsOnHand, firstCardTable, secondCardTable, array = np.zeros(26*3)):
     for card in cardsOnHand:
         array[card] = 1
     if firstCardTable != zole.cards.no_card:
@@ -334,6 +386,7 @@ class Archive:
         if self.output==[]: True
         else: False
 
+
 def calculateRelativeResult(player, resultAbsolute):
     playerRoleArr = [player.role, player.next_player.role, player.next_player.next_player.role]
     if zole.player.PlayerRoles.LIELAIS in playerRoleArr:                                   #parasts
@@ -358,7 +411,6 @@ def calculateRelativeResult(player, resultAbsolute):
             return (resultAbsolute+6)/13
 
 def stateEval_func(player : Player):
-    hand = player.hand
     pointsYou, pointsThem = getPoints(player)
     cardsLeft = np.zeros(26)
     pointsLeftCoef = (120-pointsYou-pointsThem)/120
@@ -378,7 +430,10 @@ def stateEval_func(player : Player):
     for card in player.hand:
         personalValue+=cardValues[card.i]
     if totalValue!=0:
-        personalValueCoef = personalValue/totalValue
+        if player.role == zole.player.PlayerRoles.MAZAIS:
+            personalValueCoef = (personalValue+(totalValue-personalValue)/2)/totalValue
+        else:
+            personalValueCoef = personalValue/totalValue
     else: personalValueCoef = 0
     stateEval = personalValueCoef*pointsLeftCoef+pointDiffCoef*(1-pointsLeftCoef)
     if player.role==zole.player.PlayerRoles.GALDINS:
@@ -386,3 +441,254 @@ def stateEval_func(player : Player):
     else:
         return stateEval
     
+def generateFullHandData(dataPaths, dataAmount):
+    generateHandData(round(dataAmount*0.7,0), dataPaths.TEST_X, dataPaths.TEST_Y)
+    generateHandData(round(dataAmount*0.3,0), dataPaths.TRAIN_X, dataPaths.TRAIN_Y)
+
+def generateHandData(dataAmount, savePath_x, savePath_y):
+    data_x = []
+    data_y = []
+    while len(data_x)<dataAmount:
+        handLen = rand.randint(1,8)
+        list_n = [rand.randint(0,25) for i in range(handLen)]
+        while len(list_n) != len(set(list_n)):
+            list_n = [rand.randint(0,25) for i in range(handLen)]
+        tensor = intArrayToIndexArr(list_n)
+        data_y.append(tensor)
+        tensor = np.concatenate((tensor, np.zeros(52)))
+        data_x.append(tensor)
+        if len(tensor) !=26:
+            pass
+    data_x = np.array(data_x)
+    data_y = np.array(data_y)
+    data_x = torch.FloatTensor(data_x)
+    data_y = torch.FloatTensor(data_y)
+    torch.save(data_x, savePath_x)
+    torch.save(data_y, savePath_y)
+
+def generateSimpleFullData(paths, cardAmount, dataAmount, cardAmountMin = None, cardsOnTable = 2, cardsOnTableMin = None):
+    print("----------Generating train data----------")
+    generateSimpleData(cardAmount, round(dataAmount*0.7,0), paths.TRAIN_X, paths.TRAIN_Y, cardAmountMin, cardsOnTable, cardsOnTableMin)
+    print("----------Generating test data----------")
+    generateSimpleData(cardAmount, round(dataAmount*0.3,0), paths.TEST_X, paths.TEST_Y, cardAmountMin, cardsOnTable, cardsOnTableMin)
+
+def generateSimpleData(cardAmountMax, dataAmount, x_savePath, y_savePath, cardAmountMin = None, cardsOnTableMax = 2, cardsOnTableMin = None):
+    data_x = []
+    data_y = []
+    count = 0
+    printTimes = 5
+    printInterval = round(dataAmount/printTimes, 0)
+    curLen = 0
+    attemptCount = 0
+    cardAmount = cardAmountMax
+    cardsOnTable = cardsOnTableMax
+    while curLen<dataAmount:
+        if cardAmountMin != None: 
+            cardAmount = rand.randint(cardAmountMin, cardAmountMax)
+        if cardsOnTableMin != None:
+            cardsOnTable = rand.randint(cardsOnTableMin, cardsOnTableMax)
+
+        attemptCount+=1
+        list_n = [rand.randint(0,25) for i in range(cardAmount+cardsOnTable)]
+        while len(list_n) != len(set(list_n)):
+            list_n = [rand.randint(0,25) for i in range(cardAmount+cardsOnTable)]
+        cardObj_OnHand = []
+        cardI_OnHand = []
+        firstCardTable = all_cards[list_n[0]]
+        secondCardTable = all_cards[list_n[1]]
+        for i in range(cardsOnTable,cardsOnTable+cardAmount):
+            cardI_OnHand.append(list_n[i])
+            cardObj_OnHand.append(all_cards[list_n[i]])
+        
+        allowedArr = CardOnTableToAllowedCards(firstCardTable.i)
+        availableArr = intArrayToIndexArr(cardI_OnHand)
+        legalArr = allowedArr*availableArr
+        legalCards = indexArrToIntArr(legalArr)
+        if sum(legalArr)==0:
+            legalArr = availableArr
+            legalCards = cardI_OnHand
+        correctCards = []
+        if cardsOnTable==2 and zole.cards.new_card_is_stronger(firstCardTable, secondCardTable):
+            strongestCard = secondCardTable
+        else:
+            strongestCard = firstCardTable
+        for card in legalCards:
+            if zole.cards.new_card_is_stronger(strongestCard, all_cards[card]):
+                correctCards.append(card)
+
+        if len(correctCards)==1:  #ja vajag lai ir tieši viena derīga
+        #if len(correctCards)!=0: # ja ir vairākas atļutas, pareizā ir vājākā no atļautajā
+            #correctCards = [max(correctCards)]  #šis arī
+            y = np.zeros(26)
+            hasTrump = False
+            hasQueen = False
+            hasJack = False
+            hasAce = False
+            for card in correctCards:
+                y[card] = 1
+                if all_cards[card].is_trump:
+                    hasTrump = True
+                if all_cards[card].rank=='A':
+                    hasAce = True
+                if all_cards[card].rank=='Q':
+                    hasQueen = True
+                if all_cards[card].rank=='J':
+                    hasJack = True
+            appendAmount = 1  # lai mākslīgi izmainītu proporciju retākām situācijām
+            if hasTrump==False:
+                appendAmount+=1
+            #if hasTrump==False and hasAce==False:
+            #    appendAmount+=1
+            if hasTrump==True and hasQueen==False:
+                appendAmount+=1
+                if hasJack==False:
+                    appendAmount+=1
+
+            x = np.zeros(26*3+1)
+            x_tensor = turnInputStateIntoArray(cardI_OnHand, firstCardTable.i, secondCardTable.i, x)
+            if hasTrump:
+                x_tensor[26*3] = 1
+            for i in range(appendAmount):
+                data_x.append(x_tensor)
+                data_y.append(y)
+            curLen = len(data_x)
+            if curLen%printInterval<appendAmount:
+                print(f'Data generation progress: {round(curLen/dataAmount,3)*100}%')
+            #if attemptCount%10000==0:  
+                #print(f'attemptCount: {attemptCount}, success percentage: {curLen/attemptCount}')
+    data_x = torch.FloatTensor(np.array(data_x))
+    data_y = torch.FloatTensor(np.array(data_y))
+    torch.save(data_x, x_savePath)
+    torch.save(data_y, y_savePath)
+    return data_x, data_y
+
+def generateSimple2FullData(paths, cardAmount, dataAmount, cardAmountMin = None, cardsOnTable = 2, cardsOnTableMin = None):
+    print("----------Generating train data----------")
+    generateSimple2Data(cardAmount, round(dataAmount*0.7,0), paths.TRAIN_X, paths.TRAIN_Y, cardAmountMin, cardsOnTable, cardsOnTableMin)
+    print("----------Generating test data----------")
+    generateSimple2Data(cardAmount, round(dataAmount*0.3,0), paths.TEST_X, paths.TEST_Y, cardAmountMin, cardsOnTable, cardsOnTableMin)
+
+def generateSimple2Data(cardAmountMax, dataAmount, x_savePath, y_savePath, cardAmountMin = None, cardsOnTableMax = 2, cardsOnTableMin = None):
+    data_x = []
+    data_y = []
+    printTimes = 5
+    printInterval = round(dataAmount/printTimes, 0)
+    curLen = 0
+    attemptCount = 0
+    cardAmount = cardAmountMax
+    cardsOnTable = cardsOnTableMax
+    while curLen<dataAmount:
+        if cardAmountMin != None: 
+            cardAmount = rand.randint(cardAmountMin, cardAmountMax)
+        if cardsOnTableMin != None:
+            cardsOnTable = rand.randint(cardsOnTableMin, cardsOnTableMax)
+
+        playerRoles = [1,0,0]
+        rand.shuffle(playerRoles)
+        selfRole = playerRoles[cardsOnTable]
+        firstPlayerRole = playerRoles[0]
+        if cardsOnTable == 1:
+            secondPlayerRole = playerRoles[2]
+        if cardsOnTable == 2:
+            secondPlayerRole = playerRoles[1]
+        attemptCount+=1
+
+
+
+        list_n = [rand.randint(0,25) for i in range(cardAmount+cardsOnTable)]
+        while len(list_n) != len(set(list_n)):
+            list_n = [rand.randint(0,25) for i in range(cardAmount+cardsOnTable)]
+
+        cardObj_OnHand = []
+        cardI_OnHand = []
+        firstCardTable = all_cards[list_n[0]]
+        secondCardTable = all_cards[list_n[1]]
+        for i in range(cardsOnTable,cardsOnTable+cardAmount):
+            cardI_OnHand.append(list_n[i])
+            cardObj_OnHand.append(all_cards[list_n[i]])
+
+        if cardsOnTable==2 and zole.cards.new_card_is_stronger(firstCardTable, secondCardTable):
+            strongestCard = secondCardTable
+            takerRole = playerRoles[1]
+        else:
+            strongestCard = firstCardTable
+            takerRole = playerRoles[0]
+
+        ourTrick = False
+        if selfRole==takerRole and cardsOnTable==2:
+            ourTrick = True
+
+        allowedArr = CardOnTableToAllowedCards(firstCardTable.i)
+        availableArr = intArrayToIndexArr(cardI_OnHand)
+        legalArr = allowedArr*availableArr
+        legalCards = indexArrToIntArr(legalArr)
+        if sum(legalArr)==0:
+            legalArr = availableArr
+            legalCards = cardI_OnHand
+        correctCards = []
+        maxScore = 0
+        for card in legalCards:
+            if all_cards[card].score>maxScore:
+                maxScore = all_cards[card].score
+        if ourTrick!=True:
+            for card in legalCards:
+                if zole.cards.new_card_is_stronger(strongestCard, all_cards[card]):
+                    correctCards.append(card)
+        if ourTrick:
+            for card in legalCards:
+                if all_cards[card].score==maxScore:
+                    correctCards.append(card)
+
+
+        #if len(correctCards)>0 and len(correctCards)<cardAmount:  #ja vajag lai ir vismaz 1 derīga, bet ne visas derīgs
+        if len(correctCards)!=0: # ja ir vairākas atļutas, pareizā ir vājākā no atļautajā
+            if ourTrick!=True: 
+                correctCards = [max(correctCards)]
+            else:
+                correctCards = [min(correctCards)]
+            y = np.zeros(26)
+            hasTrump = False
+            hasQueen = False
+            hasJack = False
+            hasAce = False
+            for card in correctCards:
+                y[card] = 1
+                if all_cards[card].is_trump:
+                    hasTrump = True
+                if all_cards[card].rank=='A':
+                    hasAce = True
+                if all_cards[card].rank=='Q':
+                    hasQueen = True
+                if all_cards[card].rank=='J':
+                    hasJack = True
+            appendAmount = 1  # lai mākslīgi izmainītu proporciju retākām situācijām
+            if hasTrump==False:
+                appendAmount+=1
+            #if hasTrump==False and hasAce==False:
+            #    appendAmount+=1
+            if hasTrump==True and hasQueen==False:
+                appendAmount+=1
+                if hasJack==False:
+                    appendAmount+=1
+
+            x = np.zeros(26*3+1+2)
+            x_tensor = turnInputStateIntoArray(cardI_OnHand, firstCardTable.i, secondCardTable.i, array = x)
+            if hasTrump:
+                x_tensor[26*3] = 1
+            if firstPlayerRole == selfRole:
+                x_tensor[26*3+1] = 1
+            if secondPlayerRole == selfRole and cardsOnTable == 2:
+                x_tensor[26*3+2] = 1
+            for i in range(appendAmount):
+                data_x.append(x_tensor)
+                data_y.append(y)
+            curLen = len(data_x)
+            if curLen%printInterval<appendAmount:
+                print(f'Data generation progress: {round(curLen/dataAmount,3)*100}%')
+            #if attemptCount%10000==0:  
+                #print(f'attemptCount: {attemptCount}, success percentage: {curLen/attemptCount}')
+    data_x = torch.FloatTensor(np.array(data_x))
+    data_y = torch.FloatTensor(np.array(data_y))
+    torch.save(data_x, x_savePath)
+    torch.save(data_y, y_savePath)
+    return data_x, data_y

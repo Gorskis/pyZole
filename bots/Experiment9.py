@@ -59,13 +59,6 @@ class MainNetwork:
             array[secondCardTable+52] = 1
         return array
 
-    def removeSpentCard(self, cardsOnHand, spentCardNumber):
-        newHand = []
-        for card in cardsOnHand:
-            if card !=spentCardNumber:
-                newHand.append(card)
-        return newHand
-
     def tensorToCard(self, tensor):
         chosenCardVal = max(tensor)
         # Ja atļauti bija tikai slikti varianti, labākajai izvēlei būs negatīva vērtība un tik izvēlēta pirmā no aizliegtajām kārtīm, jo tām ir 0

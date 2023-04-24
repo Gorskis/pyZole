@@ -25,16 +25,17 @@ class BotGameScreen(Screen):
         self.log_window = self.gui_elements.add(LogWindow((50, 150)))
         self.game_started = False
         self.games_to_run = 0
+        self.games_done = 0
         self.last_event: GameEvent = None
         self.game_logger = None
         if self.app_state.settings.write_log:
             self.game_logger = GameLogger()
 
-    def log_result(self, party_results: PartyResults):
+    def log_result(self, party_results: PartyResults, gameCount):
         first = party_results.party.players.first()
         second = party_results.party.players.second()
         third = party_results.party.players.third()
-        self.log_window.add_text(f'{first}:{first.role}:{first.points} / {second}:{second.role}:{second.points} / {third}:{third.role}:{third.points}')
+        self.log_window.add_text(f'game: {gameCount} / {first}:{first.role}:{first.points} / {second}:{second.role}:{second.points} / {third}:{third.role}:{third.points}')
 
     def thread_update(self):
         self.game_session.current_event = StartSessionEvent()
@@ -51,8 +52,10 @@ class BotGameScreen(Screen):
                     self.game_started = False
                     break
                 elif game_event.name == EventNames.PartyEndedEvent:
+                    self.games_done +=1
                     party_results = game_event.party_results
-                    self.log_result(party_results)
+                    if self.games_done%10==0:
+                        self.log_result(party_results, self.games_done)
 
     def update(self):
         pass

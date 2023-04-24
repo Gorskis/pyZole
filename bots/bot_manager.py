@@ -12,6 +12,20 @@ from bots.Experiment9 import Experiment9
 from bots.Experiment10 import Experiment10
 from bots.Experiment11 import Experiment11
 from bots.Experiment12 import Experiment12
+from bots.Experiment15 import Experiment15
+from bots.Experiment16 import Experiment16
+from bots.Experiment17 import Experiment17
+from bots.Experiment18 import Experiment18
+from bots.Experiment19 import Experiment19
+from bots.Experiment20 import Experiment20
+from bots.Experiment21 import Experiment21
+from bots.Experiment22 import Experiment22
+from bots.Experiment25 import Experiment25
+from bots.Experiment26 import Experiment26
+from bots.Experiment41 import Experiment41
+from bots.Experiment42 import Experiment42
+
+import bots
 
 all_bots = (RandoCalrissian,
             Sequential,
@@ -23,9 +37,22 @@ all_bots = (RandoCalrissian,
             # Experiment4_2,
             # Experiment5,
             # Experiment9,
-            Experiment10,
-            Experiment11,
-            Experiment12)
+            # Experiment10,
+            # Experiment11,
+            #Experiment12,
+            # Experiment15,
+            # Experiment16,
+            # Experiment17,
+            # Experiment18,
+            # Experiment19,
+            # Experiment20,
+            # Experiment21,
+            Experiment22,
+            Experiment25,
+            Experiment26,
+            Experiment41,
+            Experiment42)
+
 class BotManager:
     def __new__(cls):  # There can be only one
         if not hasattr(cls, 'instance'):
